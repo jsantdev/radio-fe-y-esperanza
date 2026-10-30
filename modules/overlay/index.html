@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4c1d95">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <title>Fe y Esperanza Radio - TikTok Live Overlay</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Playfair Display (Elegante Serif) & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- JSConfetti para efectos de meta y regalos VIP -->
+  <script src="https://cdn.jsdelivr.net/npm/js-confetti@latest/dist/js-confetti.browser.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              pink: '#FCE7F3',
+              rose: '#F472B6',
+              deepPink: '#DB2777',
+              violet: '#4C1D95',
+              purple: '#7C3AED',
+              softPurple: '#DDD6FE',
+              gold: '#F59E0B',
+              goldLight: '#FDE68A',
+            }
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          keyframes: {
+            pulseGlow: {
+              '0%, 100%': { boxShadow: '0 0 15px rgba(244, 114, 182, 0.4), 0 0 30px rgba(245, 158, 11, 0.2)' },
+              '50%': { boxShadow: '0 0 25px rgba(244, 114, 182, 0.8), 0 0 45px rgba(245, 158, 11, 0.5)' },
+            },
+            floatUp: {
+              '0%': { transform: 'translateY(0) scale(0.8)', opacity: '1' },
+              '100%': { transform: 'translateY(-120px) scale(1.3)', opacity: '0' },
+            },
+            shimmer: {
+              '100%': { transform: 'translateX(100%)' }
+            },
+            bounceGentle: {
+              '0%, 100%': { transform: 'translateY(-3%)' },
+              '50%': { transform: 'translateY(0)' }
+            }
+          },
+          animation: {
+            'pulse-glow': 'pulseGlow 3s infinite ease-in-out',
+            'float-up': 'floatUp 2.5s ease-out forwards',
+            'bounce-gentle': 'bounceGentle 2s infinite ease-in-out',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Estilos base para overlay transparente */
+    body {
+      background-color: transparent;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      user-select: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    /* Aspect ratio 9:16 contenedor principal */
+    .aspect-tiktok {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      max-width: 506px; /* 9:16 proporcional */
+      max-height: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    #overlayContainer {
+      padding: 16px 16px calc(clamp(120px, 23vh, 210px) + env(safe-area-inset-bottom));
+    }
+
+    /* Glassmorphism de lujo */
+    .glass-card {
+      background: rgba(30, 10, 40, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25);
+    }
+
+    .glass-gold {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(124, 58, 237, 0.35));
+      backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(245, 158, 11, 0.5);
+    }
+
+    /* Ecualizador animado */
+    .eq-bar {
+      width: 4px;
+      background: linear-gradient(to top, #F472B6, #F59E0B);
+      border-radius: 4px;
+      animation: eqAnim 1.2s ease-in-out infinite alternate;
+    }
+    .eq-bar:nth-child(1) { height: 18px; animation-delay: 0.1s; }
+    .eq-bar:nth-child(2) { height: 28px; animation-delay: 0.4s; }
+    .eq-bar:nth-child(3) { height: 12px; animation-delay: 0.2s; }
+    .eq-bar:nth-child(4) { height: 32px; animation-delay: 0.6s; }
+    .eq-bar:nth-child(5) { height: 20px; animation-delay: 0.3s; }
+
+    @keyframes eqAnim {
+      0% { transform: scaleY(0.3); }
+      100% { transform: scaleY(1.1); }
+    }
+
+    /* Canvas para partículas y corazones */
+    #particleCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    /* Scrollbar personalizada para el panel de control */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #DB2777;
+      border-radius: 4px;
+    }
+
+    /* Animaciones de entrada/salida */
+    .toast-enter {
+      animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .toast-exit {
+      animation: fadeOutUp 0.5s ease-in forwards;
+    }
+
+    #alertContainer { position: absolute; top: 0; right: 0; width: min(88%, 360px); max-height: 26vh; overflow: hidden; align-items: flex-end; }
+    #songUnlockedBanner { position: absolute; top: 28%; right: 0; width: min(90%, 360px); }
+    .alert-card { max-width: min(94vw, 390px); }
+    .event-subtitle { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+    .event-kind { flex: 0 0 auto; border-radius: 999px; padding: 2px 7px; background: rgba(244, 114, 182, .18); color: #fce7f3; font-size: 9px; font-weight: 800; letter-spacing: .06em; }
+    .event-kind.gift { background: rgba(245, 158, 11, .2); color: #fde68a; }
+    .event-avatar { position: relative; display: flex; flex: 0 0 42px; width: 42px; height: 42px; align-items: center; justify-content: center; overflow: hidden; border-radius: 50%; background: linear-gradient(135deg, #ec4899, #7c3aed); color: white; font-size: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, .3); }
+    .event-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .event-avatar-mark { position: absolute; right: -1px; bottom: -1px; display: grid; width: 17px; height: 17px; place-items: center; border: 2px solid #2b1539; border-radius: 50%; background: #7c3aed; font-size: 9px; }
+    .gift-vip .event-avatar-mark, .gift-special .event-avatar-mark, .gift-collaborator .event-avatar-mark { background: #b45309; }
+    .gift-collaborator { border-color: rgba(244, 114, 182, .55); }
+    .gift-special { border-color: rgba(196, 181, 253, .8); }
+    .gift-vip { border-color: rgba(253, 230, 138, .9); }
+    #topContributors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }
+    .contributor { min-width: 0; overflow: hidden; border-radius: 9px; background: rgba(15, 10, 25, .48); padding: 5px 6px; text-align: center; }
+    .contributor-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; font-weight: 800; color: #fce7f3; }
+    .contributor-value { display: block; font-size: 8px; color: #fde68a; }
+    #songDedication { overflow-wrap: anywhere; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+    }
+
+    @keyframes slideInRight {
+      from { transform: translateX(100%) scale(0.8); opacity: 0; }
+      to { transform: translateX(0) scale(1); opacity: 1; }
+    }
+
+    @keyframes fadeOutUp {
+      from { transform: translateY(0) scale(1); opacity: 1; }
+      to { transform: translateY(-30px) scale(0.9); opacity: 0; }
+    }
+
+    /* Destellos brillantes */
+    .sparkle-icon {
+      filter: drop-shadow(0 0 6px #FDE68A);
+    }
+
+    audio {
+      width: 100%;
+      height: 34px;
+      accent-color: #F472B6;
+    }
+
+    @media (max-height: 720px) {
+      #overlayContainer { padding: 10px 12px calc(clamp(96px, 18vh, 140px) + env(safe-area-inset-bottom)); }
+      #overlayContainer footer { gap: 7px; }
+      #overlayContainer footer > div { padding: 8px; }
+      #overlayContainer audio { height: 30px; }
+    }
+  </style>
+</head>
+<body class="flex items-start justify-center min-h-screen text-white font-sans overflow-hidden">
+
+  <!-- CONTENEDOR 9:16 OVERLAY TIKTOK -->
+  <div id="overlayContainer" class="aspect-tiktok relative overflow-hidden flex flex-col justify-between p-4 selection:bg-none">
+
+    <!-- CANVAS PARA CORAZONES Y DESTELLOS -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- ================= CABECERA DE LA RADIO ================= -->
+    <header class="relative z-20 flex flex-col items-center">
+      <!-- Card Principal de Marca -->
+      <div class="glass-card rounded-3xl p-3 px-5 w-full flex items-center justify-between border border-pink-300/30 shadow-2xl animate-pulse-glow">
+
+        <!-- Micrófono e Isotipo -->
+        <div class="flex items-center gap-3">
+          <div class="relative flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-deepPink via-brand-purple to-brand-gold p-[2px] shadow-lg">
+            <div class="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center relative overflow-hidden">
+              <i class="fa-solid font-black fa-microphone-lines text-2xl text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-300 to-amber-300 sparkle-icon"></i>
+              <!-- Pulsación de luz -->
+              <span class="absolute inset-0 bg-pink-500/10 animate-ping rounded-full"></span>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+              <span class="text-[10px] font-bold tracking-widest text-pink-200 uppercase">EN VIVO • RADIO ONLINE</span>
+            </div>
+            <h1 class="font-serif font-extrabold text-lg leading-tight bg-gradient-to-r from-white via-pink-100 to-amber-200 bg-clip-text text-transparent">
+              FE Y ESPERANZA
+            </h1>
+            <p class="text-[10px] text-pink-200/80 font-medium tracking-wide">Música, Oración y Alabanza</p>
+          </div>
+        </div>
+
+        <!-- Ecualizador de Audio Visual -->
+        <div class="flex items-end gap-1 h-8 bg-black/20 p-1.5 rounded-xl border border-white/10">
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+          <div class="eq-bar"></div>
+        </div>
+      </div>
+
+      <!-- Banner Mensajes Rotativos Automáticos (CTA) -->
+      <div class="w-full mt-2 glass-card rounded-2xl px-4 py-2 border border-pink-400/20 flex items-center justify-center text-center shadow-lg relative overflow-hidden">
+        <div class="absolute left-3 text-amber-300 text-xs animate-spin-slow">
+          <i class="fa-solid fa-sparkles"></i>
+        </div>
+        <p id="ctaRotatorText" class="text-xs font-semibold text-pink-100 transition-all duration-500 transform translate-y-0 px-4 line-clamp-1">
+          ¡Cargando mensaje de esperanza...!
+        </p>
+        <div class="absolute right-3 text-amber-300 text-xs">
+          <i class="fa-solid fa-cross text-pink-300"></i>
+        </div>
+      </div>
+    </header>
+
+
+    <!-- ================= ZONA CENTRAL DEDICADA A ALERTAS Y CELEBRACIONES ================= -->
+    <main class="relative z-30 flex-1 flex flex-col justify-center items-center my-auto pointer-events-none w-full">
+
+      <!-- Popups de Regalos / Seguidores / Eventos VIP (Dinámico) -->
+      <div id="alertContainer" class="w-full space-y-2 flex flex-col items-center" aria-live="polite" aria-label="Últimos regalos y comentarios">
+        <!-- Generado dinámicamente mediante JS -->
+      </div>
+
+      <!-- BANNER SUPER CELEBRACIÓN: META DE CANCIÓN ALCANZADA -->
+      <div id="songUnlockedBanner" class="hidden w-full glass-gold rounded-3xl p-5 text-center border-2 border-amber-300 shadow-2xl transform transition-all duration-700 scale-90 opacity-0 animate-bounce-gentle">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-tr from-amber-400 to-pink-500 text-slate-950 text-2xl mb-2 shadow-lg">
+          <i class="fa-solid fa-music"></i>
+        </div>
+        <h2 class="font-serif text-2xl font-black text-amber-200 tracking-wide uppercase drop-shadow-md">
+          ¡META ALCANZADA! 🎶
+        </h2>
+        <p class="text-sm font-bold text-white mt-1">
+          ¡Es momento de elegir una canción!
+        </p>
+        <div class="mt-3 bg-black/40 py-1.5 px-4 rounded-full inline-block border border-amber-300/40">
+          <span class="text-xs text-pink-200">Desbloqueado por:</span>
+          <span id="songUnlockedUser" class="text-xs font-extrabold text-amber-300 ml-1">la comunidad</span>
+        </div>
+        <p id="songDedication" class="mt-2 text-xs text-pink-100"></p>
+      </div>
+
+    </main>
+
+
+    <!-- ================= SECCIÓN INFERIOR: WIDGETS Y CONTADORES ================= -->
+    <footer class="relative z-20 space-y-3">
+
+      <!-- REPRODUCTOR DE LA PLAYLIST DE LA RADIO -->
+      <div class="glass-card rounded-2xl p-3 border border-amber-300/30 shadow-xl">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="min-w-0">
+            <p class="text-[9px] uppercase tracking-wider text-amber-200 font-bold">Radio en vivo</p>
+            <p id="radioTrackTitle" class="text-xs font-extrabold text-white truncate">Conectando con la radio…</p>
+            <p id="radioHint" class="text-[10px] text-pink-200/80">Esperando estado…</p>
+          </div>
+        </div>
+        <audio id="radioPlayer" preload="metadata" aria-hidden="true" class="hidden"></audio>
+      </div>
+
+      <!-- WIDGET 1: META DE CANCIÓN / REGALOS -->
+      <div class="glass-card rounded-2xl p-3 border border-purple-300/30 shadow-xl">
+        <div class="flex justify-between items-center text-xs mb-1.5 font-bold">
+          <span class="flex items-center gap-1.5 text-pink-200">
+            <i class="fa-solid fa-compact-disc text-amber-300 animate-spin" style="animation-duration: 6s;"></i>
+            Meta para Pedir Canción
+          </span>
+          <span id="giftGoalProgressText" class="text-amber-300 font-extrabold">0 / 500 monedas</span>
+        </div>
+
+        <!-- Barra de Progreso Estilizada -->
+        <div class="w-full bg-slate-900/80 rounded-full h-3.5 p-0.5 border border-white/10 relative overflow-hidden">
+          <div id="giftProgressBar" role="progressbar" aria-label="Progreso para desbloquear una canción" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" class="bg-gradient-to-r from-pink-500 via-purple-500 to-amber-400 h-full rounded-full transition-all duration-500 relative" style="width: 0%;">
+            <!-- Brillo corredizo -->
+            <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+          </div>
+        </div>
+        <p id="coinGoalHint" class="mt-1 text-[9px] text-pink-100/80">¡Cada regalo acerca a la comunidad a elegir una canción!</p>
+        <div id="topContributors" aria-label="Top 3 colaboradores"></div>
+      </div>
+
+      <!-- WIDGET 2: CONTADOR TAP TAP (LIKES) CON BOTÓN DE TAP RAPIDO -->
+      <div class="glass-card rounded-2xl p-3 border border-pink-400/30 shadow-xl relative overflow-hidden">
+        <div class="flex items-center gap-3">
+          <!-- Icono Corazón interactivo -->
+          <div class="relative">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-400 flex items-center justify-center text-white text-2xl shadow-lg shadow-pink-500/30">
+              <i class="fa-solid fa-heart animate-pulse"></i>
+            </div>
+            <span class="absolute -top-1 -right-1 bg-amber-400 text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full border border-white">TAP</span>
+          </div>
+
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-pink-200 font-bold">Toques de Amor (Tap Tap)</div>
+            <div class="flex items-baseline gap-1.5 flex-wrap">
+              <span id="tapCounterText" class="font-serif text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-pink-100 to-amber-200">
+                0
+              </span>
+              <span id="tapGoalText" class="text-xs text-pink-300/80 font-medium">/ Meta 5,000</span>
+            </div>
+          </div>
+          <!-- Indicador visible de progreso y siguiente hito de la comunidad -->
+          <div class="ml-auto w-20 shrink-0 text-right">
+            <div id="tapPercentText" class="text-sm font-black text-amber-300">0%</div>
+            <div class="text-[9px] text-pink-200/70">meta de taps</div>
+          </div>
+        </div>
+        <div class="mt-2 h-2 w-full overflow-hidden rounded-full border border-white/10 bg-slate-900/80">
+          <div id="tapProgressBar" role="progressbar" aria-label="Progreso de taps de la comunidad" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" class="h-full rounded-full bg-gradient-to-r from-pink-500 to-amber-300 transition-all duration-500" style="width: 0%;"></div>
+        </div>
+        <p id="tapGoalHint" class="mt-1 text-[9px] text-pink-100/80">¡Cada tap nos acerca al próximo logro!</p>
+      </div>
+
+      <!-- Pie con marca sutil -->
+      <div class="flex justify-between items-center px-2 text-[10px] text-pink-200/60 font-medium">
+        <span><i class="fa-solid fa-dove text-amber-300/80 mr-1"></i>Dios bendiga tu vida</span>
+        <span>@feyesperanzaradio</span>
+      </div>
+
+    </footer>
+
+  </div>
+
+
+  <!-- ================= JAVASCRIPT PRINCIPAL DE LA APLICACIÓN ================= -->
+  <script>
+    /* ==========================================================================
+       ESTADO GLOBAL Y CONFIGURACIÓN
+       ========================================================================== */
+    const state = {
+      tapCount: 0,
+      tapGoal: 5000,
+      coinCount: 0,
+      coinGoal: 500,
+      songGoalLevel: 0,
+      tapMilestoneLevel: 0,
+      ctaIndex: 0,
+      ctaMessages: [],
+      ctaIntervalSeconds: 25,
+      animationsEnabled: true,
+      contributors: {},
+      songDedication: null,
+    };
+
+    const storedOverlayState = loadOverlayState();
+    Object.assign(state, storedOverlayState);
+    const processedEventIds = new Set();
+    let ctaTimer = null;
+    let ctaRestoreTimer = null;
+    const visibleEventCards = [];
+
+    function loadOverlayState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('fe-esperanza-overlay-v2') || '{}');
+        return {
+          tapCount: Number.isSafeInteger(saved.tapCount) && saved.tapCount >= 0 ? saved.tapCount : 0,
+          coinCount: Number.isSafeInteger(saved.coinCount) && saved.coinCount >= 0 ? saved.coinCount : 0,
+          tapMilestoneLevel: Number.isSafeInteger(saved.tapMilestoneLevel) && saved.tapMilestoneLevel >= 0
+            ? saved.tapMilestoneLevel : 0,
+          songGoalLevel: Number.isSafeInteger(saved.songGoalLevel) && saved.songGoalLevel >= 0
+            ? saved.songGoalLevel : 0,
+          contributors: saved.contributors && typeof saved.contributors === 'object' && !Array.isArray(saved.contributors)
+            ? saved.contributors : {},
+          songDedication: saved.songDedication && typeof saved.songDedication === 'object'
+            ? saved.songDedication : null,
+        };
+      } catch {
+        return {};
+      }
+    }
+
+    function persistOverlayState() {
+      try {
+        localStorage.setItem('fe-esperanza-overlay-v2', JSON.stringify({
+          tapCount: state.tapCount,
+          coinCount: state.coinCount,
+          tapMilestoneLevel: state.tapMilestoneLevel,
+          songGoalLevel: state.songGoalLevel,
+          contributors: state.contributors,
+          songDedication: state.songDedication,
+        }));
+      } catch (error) {
+        console.warn('No se pudo guardar el progreso local del overlay:', error);
+      }
+    }
+
+    // Inicializador de Confetti
+    const jsConfetti = new JSConfetti();
+
+    /* ==========================================================================
+       INICIALIZACIÓN AL CARGAR LA PÁGINA
+       ========================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js').catch((error) => {
+          console.error('No se pudo preparar la instalación de la radio:', error);
+        });
+      }
+      initCanvas();
+      startCtaRotator();
+      updateUI();
+      initRadioPlayer();
+      initTikTokEventStream();
+      initOperatorStream();
+    });
+
+    /* ==========================================================================
+       SISTEMA DE PARTÍCULAS Y CORAZONES EN CANVAS
+       ========================================================================== */
+    let canvas, ctx;
+    let particles = [];
+
+    function initCanvas() {
+      canvas = document.getElementById('particleCanvas');
+      ctx = canvas.getContext('2d');
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+      requestAnimationFrame(renderParticles);
+    }
+
+    function resizeCanvas() {
+      if (!canvas) return;
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+
+    class Particle {
+      constructor(x, y, type = 'heart', emoji = '❤️') {
+        this.x = x || Math.random() * canvas.width;
+        this.y = y || canvas.height + 20;
+        this.type = type;
+        this.emoji = emoji;
+        this.size = Math.random() * 18 + 14;
+        this.speedY = Math.random() * 2 + 1.5;
+        this.speedX = (Math.random() - 0.5) * 1.5;
+        this.opacity = 1;
+        this.rotation = (Math.random() - 0.5) * 0.4;
+      }
+
+      update() {
+        this.y -= this.speedY;
+        this.x += Math.sin(this.y / 20) * this.speedX;
+        this.opacity -= 0.008;
+      }
+
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.opacity);
+        ctx.font = `${this.size}px serif`;
+        ctx.fillText(this.emoji, this.x, this.y);
+        ctx.restore();
+      }
+    }
+
+    function spawnHeartBurst(count = 5) {
+      if (!state.animationsEnabled) return;
+      const startX = canvas.width * (0.18 + Math.random() * 0.64);
+      const startY = canvas.height - 120;
+      const emojis = ['❤️', '💖', '✨', '💕', '🌸', '🕊️'];
+
+      for (let i = 0; i < count; i++) {
+        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        particles.push(new Particle(startX + (Math.random() * 40 - 20), startY, 'emoji', randomEmoji));
+      }
+    }
+
+    function renderParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw();
+        if (particles[i].opacity <= 0 || particles[i].y < -20) {
+          particles.splice(i, 1);
+        }
+      }
+      requestAnimationFrame(renderParticles);
+    }
+
+    /* ==========================================================================
+       LÓGICA DEL CONTADOR TAP TAP Y METAS
+       ========================================================================== */
+    function registerTaps(amount = 1) {
+      const safeAmount = Number.isFinite(amount) ? Math.max(0, Math.min(10000, Math.floor(amount))) : 0;
+      if (!safeAmount) return;
+      const previousMilestone = Math.floor(state.tapCount / state.tapGoal);
+      state.tapCount += safeAmount;
+      const nextMilestone = Math.floor(state.tapCount / state.tapGoal);
+      if (nextMilestone > previousMilestone) {
+        state.tapMilestoneLevel = nextMilestone;
+        const crossed = nextMilestone - previousMilestone;
+        showTemporaryCta(crossed > 1
+          ? `¡Alcanzamos ${crossed} metas de Tap Tap! ${state.tapCount.toLocaleString()} likes 💖`
+          : `¡Meta de Tap Tap alcanzada! ${state.tapCount.toLocaleString()} likes 💖`);
+        if (state.animationsEnabled) jsConfetti.addConfetti({ emojis: ['💖', '✨', '🌸'], confettiNumber: 35 });
+      }
+      persistOverlayState();
+      spawnHeartBurst(Math.min(amount, 6));
+      updateUI();
+    }
+
+    function updateUI() {
+      // Tap Tap Counter
+      const tapCounterText = document.getElementById('tapCounterText');
+      const tapGoalText = document.getElementById('tapGoalText');
+      const tapPercentText = document.getElementById('tapPercentText');
+
+      tapCounterText.textContent = state.tapCount.toLocaleString();
+      tapGoalText.textContent = `/ Meta ${state.tapGoal.toLocaleString()}`;
+
+      const tapsInGoal = state.tapCount % state.tapGoal;
+      const tapPercent = state.tapCount > 0 && tapsInGoal === 0
+        ? 100 : Math.min(100, Math.floor((tapsInGoal / state.tapGoal) * 100));
+      tapPercentText.textContent = `${tapPercent}%`;
+      const tapProgressBar = document.getElementById('tapProgressBar');
+      tapProgressBar.style.width = `${tapPercent}%`;
+      tapProgressBar.setAttribute('aria-valuenow', String(tapPercent));
+      const tapsRemaining = tapsInGoal === 0 && tapPercent === 100 ? 0 : state.tapGoal - tapsInGoal;
+      document.getElementById('tapGoalHint').textContent = tapsRemaining === 0
+        ? '¡Meta cumplida! Sigue tocando: cada nuevo ciclo celebra otro logro.'
+        : `¡Dale TAP TAP! Faltan ${tapsRemaining.toLocaleString()} likes para la próxima meta.`;
+
+      // Goal Monedas / Canción
+      const giftProgressBar = document.getElementById('giftProgressBar');
+      const giftGoalProgressText = document.getElementById('giftGoalProgressText');
+
+      const coinsInGoal = state.coinCount % state.coinGoal;
+      const coinPercent = state.coinCount > 0 && coinsInGoal === 0
+        ? 100 : Math.min(100, (coinsInGoal / state.coinGoal) * 100);
+      const roundedCoinPercent = Math.min(100, Math.floor(coinPercent));
+      giftProgressBar.style.width = `${roundedCoinPercent}%`;
+      giftProgressBar.setAttribute('aria-valuenow', String(roundedCoinPercent));
+      giftGoalProgressText.textContent = `${coinsInGoal.toLocaleString()} / ${state.coinGoal.toLocaleString()} monedas`;
+      document.getElementById('coinGoalHint').textContent = coinPercent >= 100
+        ? '¡Meta desbloqueada! La comunidad ya puede elegir una canción.'
+        : `Faltan ${(state.coinGoal - coinsInGoal).toLocaleString()} monedas. Dedicatoria por chat: «Dedico a…»`;
+      renderTopContributors();
+    }
+
+    function renderTopContributors() {
+      const container = document.getElementById('topContributors');
+      container.replaceChildren();
+      const top = Object.entries(state.contributors)
+        .sort((first, second) => second[1] - first[1])
+        .slice(0, 3);
+      for (let index = 0; index < 3; index++) {
+        const contributor = top[index];
+        const item = document.createElement('div');
+        item.className = 'contributor';
+        const name = document.createElement('span');
+        name.className = 'contributor-name';
+        name.textContent = contributor ? `${index + 1}. @${contributor[0]}` : `${index + 1}. —`;
+        const value = document.createElement('span');
+        value.className = 'contributor-value';
+        value.textContent = contributor ? `${contributor[1].toLocaleString()} monedas` : 'colaborador';
+        item.append(name, value);
+        container.append(item);
+      }
+    }
+
+    /* ==========================================================================
+       CELEBRACIÓN Y DESBLOQUEO DE CANCIÓN
+       ========================================================================== */
+    function triggerSongGoalCelebration(userName = 'la comunidad') {
+      const banner = document.getElementById('songUnlockedBanner');
+      const userElement = document.getElementById('songUnlockedUser');
+
+      userElement.textContent = userName === 'la comunidad' ? userName : `@${userName}`;
+      const dedication = document.getElementById('songDedication');
+      dedication.textContent = state.songDedication
+        ? `Dedicatoria de @${state.songDedication.username}: ${state.songDedication.message}`
+        : 'Puedes dedicar una canción escribiendo en el chat: «Dedico a…»';
+      banner.classList.remove('hidden');
+
+      setTimeout(() => {
+        banner.classList.remove('scale-90', 'opacity-0');
+        banner.classList.add('scale-100', 'opacity-100');
+      }, 50);
+
+      // Lanzar confeti brillante
+      if (state.animationsEnabled) {
+        jsConfetti.addConfetti({
+          emojis: ['🎶', '🎵', '✨', '💖', '👑', '🕊️'],
+          emojiSize: 30,
+          confettiNumber: 60,
+        });
+      }
+
+      // Ocultar banner automáticamente después de 12 segundos
+      setTimeout(() => {
+        banner.classList.remove('scale-100', 'opacity-100');
+        banner.classList.add('scale-90', 'opacity-0');
+        setTimeout(() => {
+          banner.classList.add('hidden');
+        }, 700);
+      }, 12000);
+    }
+
+    /* ==========================================================================
+       ROTADOR DE MENSAJES DE ESPERANZA (CTA)
+       ========================================================================== */
+    function startCtaRotator() {
+      const ctaText = document.getElementById('ctaRotatorText');
+      if (ctaTimer) clearInterval(ctaTimer);
+      const advanceMessage = () => {
+        if (state.ctaMessages.length === 0) return;
+        ctaText.style.opacity = '0';
+        ctaText.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+          state.ctaIndex = (state.ctaIndex + 1) % state.ctaMessages.length;
+          ctaText.textContent = state.ctaMessages[state.ctaIndex];
+          ctaText.style.opacity = '1';
+          ctaText.style.transform = 'translateY(0)';
+        }, 500);
+      };
+      ctaTimer = setInterval(advanceMessage, state.ctaIntervalSeconds * 1000);
+      if (state.ctaMessages.length > 0) {
+        ctaText.textContent = state.ctaMessages[0];
+      }
+    }
+
+    function showTemporaryCta(message) {
+      const ctaText = document.getElementById('ctaRotatorText');
+      ctaText.textContent = message;
+      if (ctaRestoreTimer) clearTimeout(ctaRestoreTimer);
+      ctaRestoreTimer = setTimeout(() => {
+        ctaText.textContent = state.ctaMessages[state.ctaIndex] || '';
+        ctaRestoreTimer = null;
+      }, state.ctaIntervalSeconds * 1000);
+    }
+
+    /* ==========================================================================
+       SISTEMA DE ALERTAS VISUALES (REGALOS Y SEGUIDORES)
+       ========================================================================== */
+    function showNotificationAlert(alert) {
+      const { title, subtitle, icon, badge, avatar, isEpic = false, tier = '' } = alert;
+      const alertContainer = document.getElementById('alertContainer');
+
+      const card = document.createElement('div');
+      card.className = `alert-card w-11/12 glass-card rounded-2xl p-2.5 flex items-center gap-2.5 shadow-2xl border toast-enter pointer-events-auto ${
+        isEpic ? 'gift-vip bg-gradient-to-r from-purple-900/80 via-pink-900/80 to-amber-900/80'
+          : tier === 'ESPECIAL' ? 'gift-special' : tier === 'COLABORADOR' ? 'gift-collaborator' : 'border-pink-300/30'
+      }`;
+
+      const avatarContainer = document.createElement('div');
+      avatarContainer.className = 'event-avatar';
+      avatarContainer.setAttribute('aria-hidden', 'true');
+      const fallbackIcon = document.createElement('span');
+      fallbackIcon.textContent = '👤';
+      avatarContainer.append(fallbackIcon);
+      if (typeof avatar === 'string' && avatar) {
+        try {
+          const avatarUrl = new URL(avatar, window.location.href);
+          if (avatarUrl.protocol === 'https:') {
+            const image = document.createElement('img');
+            image.src = avatarUrl.href;
+            image.alt = '';
+            image.referrerPolicy = 'no-referrer';
+            image.addEventListener('load', () => fallbackIcon.remove(), { once: true });
+            image.addEventListener('error', () => image.remove(), { once: true });
+            avatarContainer.append(image);
+          }
+        } catch {
+          // Keep the event icon when TikTok does not provide a usable avatar URL.
+        }
+      }
+      const eventMark = document.createElement('span');
+      eventMark.className = 'event-avatar-mark';
+      eventMark.textContent = icon;
+      avatarContainer.append(eventMark);
+      if (isEpic) avatarContainer.classList.add('ring-2', 'ring-amber-300');
+
+      const content = document.createElement('div');
+      content.className = 'flex-1 min-w-0';
+      const badgeElement = document.createElement('span');
+      badgeElement.className = `event-kind ${tier ? 'gift' : ''}`;
+      badgeElement.textContent = badge;
+      const titleElement = document.createElement('p');
+      titleElement.className = 'text-xs font-extrabold text-white truncate mt-1';
+      titleElement.textContent = title;
+      const subtitleElement = document.createElement('p');
+      subtitleElement.className = 'event-subtitle text-[10px] font-medium text-pink-100/90 mt-0.5';
+      subtitleElement.textContent = subtitle;
+      content.append(badgeElement, titleElement, subtitleElement);
+      card.append(avatarContainer, content);
+
+      alertContainer.appendChild(card);
+      visibleEventCards.push(card);
+      while (visibleEventCards.length > 2) {
+        visibleEventCards.shift().remove();
+      }
+
+      if (isEpic && state.animationsEnabled) {
+        jsConfetti.addConfetti({
+          confettiColors: ['#F59E0B', '#EC4899', '#8B5CF6', '#FDE68A'],
+          confettiNumber: 40,
+        });
+      }
+
+    }
+
+    /* ==========================================================================
+       FUNCIONES PÚBLICAS RECEPTORAS DE EVENTOS (INTEGRACIÓN TIKTOK LIVE)
+       ========================================================================== */
+    window.onTikTokLike = function(count = 1) {
+      registerTaps(count);
+    };
+
+    window.onTikTokGift = function({ user, giftName, coins = 0, icon = '🎁', avatar = '' }) {
+      const coinValue = Number.isFinite(coins) ? Math.max(0, Math.floor(coins)) : 0;
+      if (!coinValue) return;
+      const contributor = String(user || 'usuario').replace(/^@+/, '');
+      const previousCoins = state.contributors[contributor] || 0;
+      const oldSongGoalLevel = Math.floor(state.coinCount / state.coinGoal);
+      state.coinCount += coinValue;
+      state.contributors[contributor] = previousCoins + coinValue;
+      const contributorEntries = Object.entries(state.contributors)
+        .sort((first, second) => second[1] - first[1])
+        .slice(0, 100);
+      state.contributors = Object.fromEntries(contributorEntries);
+      const newSongGoalLevel = Math.floor(state.coinCount / state.coinGoal);
+      const tier = state.contributors[contributor] >= 200
+        ? 'VIP' : state.contributors[contributor] >= 50 ? 'ESPECIAL' : 'COLABORADOR';
+      persistOverlayState();
+      updateUI();
+      if (newSongGoalLevel > oldSongGoalLevel) {
+        state.songGoalLevel = newSongGoalLevel;
+        persistOverlayState();
+        triggerSongGoalCelebration(contributor);
+        if (state.animationsEnabled) {
+          jsConfetti.addConfetti({ emojis: ['🎶', '🎵', '✨', '👑', '🕊️'], emojiSize: 28, confettiNumber: 55 });
+        }
+      }
+
+      showNotificationAlert({
+        title: `¡Gracias @${contributor}! ❤️`,
+        subtitle: `${giftName} · +${coinValue.toLocaleString()} monedas · ${tier}`,
+        icon: icon,
+        avatar,
+        badge: tier,
+        tier,
+        isEpic: tier === 'VIP',
+      });
+    };
+
+    window.onTikTokChat = function(user, message, avatar = '') {
+      const text = String(message).trim();
+      const dedicationMatch = text.match(/^(?:dedico(?:\s+esta\s+canci[oó]n)?\s+a|dedicatoria\s*:)\s*(.{2,100})$/i);
+      if (dedicationMatch) {
+        state.songDedication = { username: String(user || 'espectador').replace(/^@+/, ''), message: dedicationMatch[1].trim() };
+        persistOverlayState();
+      }
+      showNotificationAlert({
+        title: `@${user}`,
+        subtitle: text.slice(0, 120) || 'Envió un comentario',
+        icon: '💬',
+        avatar,
+        badge: 'COMENTARIO',
+      });
+    };
+
+
+    /* ==========================================================================
+       CONEXIÓN A LOS EVENTOS TIKTOK DEL SERVIDOR
+       ========================================================================== */
+    function initTikTokEventStream() {
+      const eventStream = new EventSource('/api/events');
+
+      eventStream.addEventListener('update', (event) => {
+        const { entry } = JSON.parse(event.data);
+        if (!entry || typeof entry !== 'object') return;
+        if (entry.id) {
+          if (processedEventIds.has(entry.id)) return;
+          processedEventIds.add(entry.id);
+          if (processedEventIds.size > 2000) processedEventIds.delete(processedEventIds.values().next().value);
+        }
+
+        const user = entry.username || 'usuario';
+        if (entry.type === 'like') {
+          window.onTikTokLike(Number.isFinite(entry.activityCount) ? entry.activityCount : 1);
+        } else if (entry.type === 'gift') {
+          const giftName = (entry.content || 'Envió un regalo')
+            .replace(/^Envió\s*/i, '')
+            .replace(/\s+x\d+$/i, '');
+          const giftCount = Number.isFinite(entry.activityCount) ? entry.activityCount : 1;
+          const giftCoins = Number.isFinite(entry.diamondCount) ? entry.diamondCount * giftCount : 0;
+          window.onTikTokGift({
+            user,
+            giftName,
+            coins: giftCoins,
+            avatar: entry.avatar,
+          });
+        } else if (entry.type === 'chat') {
+          window.onTikTokChat(user, entry.content || 'Envió un mensaje', entry.avatar);
+        }
+      });
+      eventStream.addEventListener('open', () => {
+        console.info('Conectado al flujo de eventos de TikTok.');
+      });
+      eventStream.addEventListener('error', () => {
+        console.warn('Conexión de eventos interrumpida; el navegador volverá a conectarse automáticamente.');
+      });
+    }
+
+    function initOperatorStream() {
+      const operatorStream = new EventSource('/api/overlay/stream');
+      operatorStream.addEventListener('settings', (event) => {
+        const settings = JSON.parse(event.data);
+        state.tapGoal = settings.tapGoal;
+        state.coinGoal = settings.coinGoal;
+        state.ctaIntervalSeconds = settings.ctaIntervalSeconds || 25;
+        state.ctaMessages = settings.ctaMessages;
+        state.ctaIndex = state.ctaMessages.length ? state.ctaIndex % state.ctaMessages.length : 0;
+        state.tapMilestoneLevel = Math.floor(state.tapCount / state.tapGoal);
+        state.songGoalLevel = Math.floor(state.coinCount / state.coinGoal);
+        updateUI();
+        startCtaRotator();
+      });
+      operatorStream.addEventListener('command', (event) => {
+        const { action } = JSON.parse(event.data);
+        if (action === 'reset') {
+          state.tapCount = 0;
+          state.tapMilestoneLevel = 0;
+          state.coinCount = 0;
+          state.songGoalLevel = 0;
+          state.contributors = {};
+          state.songDedication = null;
+          persistOverlayState();
+          updateUI();
+        } else if (action === 'test-like') {
+          showTemporaryCta('Vista previa: Tap Tap. No suma likes.');
+        } else if (action === 'test-follow') {
+          showTemporaryCta('Vista previa: bienvenida. No registra espectadores.');
+        } else if (action === 'test-gift') {
+          showTemporaryCta('Vista previa: regalo. No suma monedas ni ranking.');
+        } else if (action === 'test-epic-gift') {
+          showTemporaryCta('Vista previa VIP. No suma monedas ni ranking.');
+        } else if (action === 'test-song-goal') {
+          showTemporaryCta('Vista previa de meta musical. No modifica el progreso.');
+        }
+      });
+    }
+
+    /* ==========================================================================
+       REPRODUCTOR CONECTADO A LA PLAYLIST DEL SERVIDOR
+       ========================================================================== */
+    function initRadioPlayer() {
+      const player = document.getElementById('radioPlayer');
+      const trackTitle = document.getElementById('radioTrackTitle');
+      const radioHint = document.getElementById('radioHint');
+      let currentUrl = '';
+      let triedAutoplay = false;
+
+      async function postPlayback(isPlaying) {
+        const response = await fetch('/api/radio/playback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isPlaying }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'No se pudo actualizar la reproducción.');
+      }
+
+      function playAudio() {
+        triedAutoplay = true;
+        player.play().catch(() => {
+          radioHint.textContent = 'Inicia la reproducción desde los controles de /playlist.';
+        });
+      }
+
+      function showRadioState(radioState) {
+        const hasTrack = Boolean(radioState.currentTrack);
+        if (!hasTrack) {
+          currentUrl = '';
+          player.pause();
+          player.removeAttribute('src');
+          player.load();
+          trackTitle.textContent = 'Agrega canciones desde el panel de playlist.';
+          radioHint.textContent = 'La playlist está vacía.';
+          return;
+        }
+
+        trackTitle.textContent = radioState.currentTrack.title;
+        radioHint.textContent = radioState.isPlaying ? 'En reproducción' : 'Lista para reproducir';
+        const nextUrl = new URL(radioState.currentTrack.url, window.location.href).href;
+        if (nextUrl !== currentUrl) {
+          currentUrl = nextUrl;
+          player.src = currentUrl;
+          player.load();
+          if (radioState.isPlaying || !triedAutoplay) playAudio();
+        } else if (radioState.isPlaying && player.paused) {
+          playAudio();
+        } else if (!radioState.isPlaying && !player.paused) {
+          player.pause();
+        }
+      }
+
+      player.addEventListener('play', () => {
+        postPlayback(true).catch((error) => { radioHint.textContent = error.message; });
+      });
+      player.addEventListener('pause', () => {
+        if (player.ended) return;
+        postPlayback(false).catch((error) => { radioHint.textContent = error.message; });
+      });
+      player.addEventListener('ended', () => {
+        fetch('/api/radio/next', { method: 'POST' }).then(async (response) => {
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.message || 'No se pudo avanzar a la siguiente canción.');
+        }).catch((error) => { radioHint.textContent = error.message; });
+      });
+      const radioStream = new EventSource('/api/radio-state/stream');
+      radioStream.addEventListener('snapshot', (event) => showRadioState(JSON.parse(event.data)));
+      radioStream.addEventListener('update', (event) => showRadioState(JSON.parse(event.data)));
+    }
+
+
+  </script>
+
+</body>
+</html>
